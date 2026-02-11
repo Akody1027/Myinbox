@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>My Inbox</title>
     <style>
         :root {
@@ -17,64 +17,54 @@
             --text-sub: #65676b;
         }
 
+        * { box-sizing: border-box; }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             margin: 0;
+            padding: 0;
             height: 100vh;
+            width: 100vw;
             display: flex;
             justify-content: center;
-            overflow: hidden;
+            overflow: hidden; /* Prevents whole page scrolling */
         }
 
         /* --- Global Components --- */
         .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            transition: background 0.2s;
+            background: var(--primary); color: white; border: none;
+            padding: 10px 20px; border-radius: 8px; cursor: pointer;
+            font-size: 15px; font-weight: 600; transition: background 0.2s;
         }
         .btn:hover { background: var(--primary-dark); }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
-        
         .btn-danger { background: var(--danger); }
         .btn-secondary { background: #e4e6eb; color: black; }
 
         .icon-btn {
-            background: none; border: none; font-size: 22px; cursor: pointer; color: var(--primary);
-            padding: 5px; border-radius: 50%;
+            background: none; border: none; cursor: pointer; color: var(--primary);
+            padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
         }
         .icon-btn:hover { background: rgba(0,0,0,0.05); }
+        .icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
 
         input[type="text"], input[type="password"] {
-            width: 100%; box-sizing: border-box;
-            padding: 12px; margin: 8px 0;
-            border: 1px solid #ddd; border-radius: 8px;
-            font-size: 16px; outline: none;
+            width: 100%; padding: 12px; margin: 8px 0;
+            border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none;
         }
         input:focus { border-color: var(--primary); }
 
-        /* --- Modals (Auth & New Chat) --- */
+        /* --- Modals --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 2000;
-            display: flex; /* Flex to center */
-            justify-content: center;
-            align-items: center;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            z-index: 2000; display: flex; justify-content: center; align-items: center;
         }
         .modal-box {
-            background: white; padding: 2rem;
-            border-radius: 16px;
+            background: white; padding: 2rem; border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 90%; max-width: 320px;
-            text-align: center;
+            width: 90%; max-width: 320px; text-align: center;
         }
         .hidden { display: none !important; }
 
@@ -86,6 +76,7 @@
             flex-direction: column;
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            overflow: hidden;
         }
 
         /* --- Header --- */
@@ -95,55 +86,58 @@
             display: flex; justify-content: space-between; align-items: center;
             background: white; z-index: 10; flex-shrink: 0;
         }
-        h2 { font-size: 18px; margin: 0; }
+        h2 { font-size: 18px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* --- Inbox --- */
         #inbox-view {
             flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+            -webkit-overflow-scrolling: touch;
         }
         .thread-item {
-            padding: 12px 15px;
-            display: flex; align-items: center;
+            padding: 12px 15px; display: flex; align-items: center;
             cursor: pointer; border-bottom: 1px solid #f0f0f0;
-            transition: background 0.1s;
         }
         .thread-item:hover { background: #f7f8fa; }
-        
         .avatar-circle {
-            width: 45px; height: 45px;
-            background: #e4e6eb; color: #555;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 18px;
-            margin-right: 12px; flex-shrink: 0;
+            width: 45px; height: 45px; background: #e4e6eb; color: #555;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 18px; margin-right: 12px; flex-shrink: 0;
         }
-        
         .thread-info { flex: 1; overflow: hidden; }
-        .thread-name { font-weight: 600; font-size: 16px; color: var(--text-main); margin-bottom: 4px; }
+        .thread-name { font-weight: 600; font-size: 16px; color: var(--text-main); }
         .thread-preview { font-size: 13px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .badge {
-            background: var(--danger); color: white;
-            font-size: 11px; padding: 2px 8px;
+            background: var(--danger); color: white; font-size: 11px; padding: 2px 8px;
             border-radius: 12px; margin-left: auto;
         }
-
-        .select-checkbox {
-            margin-right: 15px; transform: scale(1.3);
-            display: none; /* Hidden unless merge mode */
-        }
+        .select-checkbox { margin-right: 15px; transform: scale(1.3); display: none; }
 
         /* --- Chat View --- */
         #chat-view {
             flex: 1; display: none; flex-direction: column; height: 100%;
-            background: white;
+            background: white; position: relative;
         }
         
         #messages-list {
-            flex: 1; padding: 15px;
-            overflow-y: auto;
+            flex: 1; padding: 15px; overflow-y: auto;
             display: flex; flex-direction: column; gap: 8px;
-            background: #fff;
+            background: #fff; position: relative;
+            -webkit-overflow-scrolling: touch;
         }
+
+        /* Empty State Prompt */
+        #empty-state-prompt {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #888;
+            display: none; /* Toggled via JS */
+            flex-direction: column;
+            align-items: center;
+            width: 80%;
+        }
+        #empty-state-prompt svg { width: 60px; height: 60px; margin-bottom: 10px; fill: #ddd; }
 
         .message {
             max-width: 75%; padding: 10px 14px;
@@ -151,29 +145,24 @@
             position: relative; word-wrap: break-word; line-height: 1.4;
         }
         .message.me {
-            align-self: flex-end;
-            background-color: var(--bubble-me); color: white;
+            align-self: flex-end; background-color: var(--bubble-me); color: white;
             border-bottom-right-radius: 4px;
         }
         .message.them {
-            align-self: flex-start;
-            background-color: var(--bubble-them); color: black;
+            align-self: flex-start; background-color: var(--bubble-them); color: black;
             border-bottom-left-radius: 4px;
         }
-        .message img, .message video {
-            max-width: 100%; border-radius: 12px; display: block; margin-top: 5px;
-        }
+        .message img, .message video { max-width: 100%; border-radius: 12px; display: block; margin-top: 5px; }
         .sender-label { font-size: 11px; color: #888; margin-bottom: 2px; margin-left: 10px; }
 
         /* --- Footer / Input --- */
         #input-area {
-            border-top: 1px solid #e4e6eb;
-            background: white; padding: 10px;
+            border-top: 1px solid #e4e6eb; background: white; padding: 10px;
+            flex-shrink: 0; /* Prevent shrinking */
         }
         .input-row { display: flex; align-items: center; gap: 10px; }
         #message-input {
-            flex: 1; padding: 10px 15px;
-            border-radius: 20px; border: 1px solid #ddd;
+            flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd;
             background: #f0f2f5; outline: none;
         }
         #sandbox-preview {
@@ -231,14 +220,22 @@
     <div id="app-container">
         
         <header id="main-header">
-            <div id="header-left" style="display:flex; align-items:center;">
-                <button class="icon-btn hidden" id="back-btn" style="margin-right: 5px;">←</button>
+            <div id="header-left" style="display:flex; align-items:center; flex:1; overflow:hidden;">
+                <button class="icon-btn hidden" id="back-btn" style="margin-right: 5px;">
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                </button>
                 <h2 id="header-title">My Inbox</h2>
             </div>
             <div id="header-right">
-                <span id="inbox-actions">
-                    <button class="icon-btn" id="toggle-select-mode" title="Merge Threads">⚡</button>
-                    <button class="icon-btn" id="open-new-chat-btn" title="New Chat" style="margin-left:5px;">+</button>
+                <span id="inbox-actions" style="display:flex; align-items:center;">
+                    <button class="icon-btn" id="toggle-select-mode" title="Merge Threads">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="open-new-chat-btn" title="New Chat" style="margin-left:5px;">
+                        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                    </button>
                 </span>
                 <span id="chat-actions" class="hidden chat-actions">
                     <button id="block-btn" class="btn-mini" style="background:#888;">Block</button>
@@ -255,7 +252,13 @@
         <div id="inbox-view"></div>
 
         <div id="chat-view">
-            <div id="messages-list"></div>
+            <div id="messages-list">
+                <div id="empty-state-prompt">
+                    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                    <div>Start a conversation</div>
+                    <div style="font-size:12px; margin-top:5px;">Say hello!</div>
+                </div>
+            </div>
             
             <div id="blocked-notice">This conversation is blocked.</div>
 
@@ -267,9 +270,13 @@
 
                 <div class="input-row">
                     <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" />
-                    <button class="icon-btn" id="attach-btn">📎</button>
+                    <button class="icon-btn" id="attach-btn" title="Attach Media">
+                        <svg viewBox="0 0 24 24" style="transform: rotate(45deg);"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5a2.5 2.5 0 0 0 5 0V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
+                    </button>
                     <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off"/>
-                    <button class="icon-btn" id="send-btn" style="color:var(--primary);">➤</button>
+                    <button class="icon-btn" id="send-btn" style="color:var(--primary);" title="Send">
+                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -322,6 +329,7 @@
         const backBtn = document.getElementById('back-btn');
         const inboxActions = document.getElementById('inbox-actions');
         const chatActions = document.getElementById('chat-actions');
+        const emptyStatePrompt = document.getElementById('empty-state-prompt');
 
         // New Chat Modal
         const newChatModal = document.getElementById('new-chat-modal');
@@ -382,7 +390,6 @@
                         loginBtn.disabled = false;
                     }
                 } else {
-                    // Create new user
                     const newUser = { name: name, pin: pin, createdAt: serverTimestamp() };
                     await setDoc(userDocRef, newUser);
                     currentUser = { id: userId, ...newUser };
@@ -405,13 +412,12 @@
         // --- INBOX LOGIC ---
         function loadInbox() {
             const threadsRef = collection(db, "threads");
-            // Basic query: am I a participant?
             const q = query(threadsRef, where("participants", "array-contains", currentUser.name), orderBy("lastUpdated", "desc"));
 
             onSnapshot(q, (snapshot) => {
                 inboxView.innerHTML = '';
                 if (snapshot.empty) {
-                    inboxView.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">No messages yet.<br>Click + to start.</div>';
+                    inboxView.innerHTML = '<div style="text-align:center; padding:40px; color:#aaa; font-size:14px;">No messages yet.<br>Tap + to start.</div>';
                     return;
                 }
 
@@ -422,10 +428,8 @@
                     const chatName = otherParticipants.join(", ");
                     const unreadCount = (data.unreadCounts && data.unreadCounts[currentUser.name]) || 0;
                     
-                    // Initials for avatar
                     const initials = chatName.substring(0, 1).toUpperCase();
 
-                    // Sound alert
                     if (unreadCount > 0 && currentChatId !== threadId) {
                         document.getElementById('notif-sound').play().catch(() => {});
                     }
@@ -444,9 +448,7 @@
                         ${unreadCount > 0 ? `<div class="badge">${unreadCount}</div>` : ''}
                     `;
 
-                    // Click logic
                     const checkbox = item.querySelector('.select-checkbox');
-                    const infoDiv = item.querySelector('.thread-info');
                     
                     if (isSelectMode) {
                         checkbox.style.display = 'block';
@@ -460,7 +462,7 @@
             });
         }
 
-        // --- NEW CHAT LOGIC (Fixed) ---
+        // --- NEW CHAT LOGIC ---
         openNewChatBtn.addEventListener('click', () => {
             newChatNameInput.value = '';
             newChatModal.classList.remove('hidden');
@@ -486,7 +488,6 @@
             confirmChatBtn.disabled = true;
 
             try {
-                // 1. Check if thread already exists
                 const threadsRef = collection(db, "threads");
                 const q = query(threadsRef, where("participants", "array-contains", currentUser.name));
                 const snapshot = await getDocs(q);
@@ -495,7 +496,6 @@
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // Check if this thread has exactly these 2 people
                     if (data.participants.length === 2 && data.participants.includes(targetName)) {
                         existingThreadId = doc.id;
                     }
@@ -506,13 +506,11 @@
                 confirmChatBtn.disabled = false;
 
                 if (existingThreadId) {
-                    // Open existing
                     openThread(existingThreadId, targetName);
                 } else {
-                    // Create new
                     const newDoc = await addDoc(collection(db, "threads"), {
                         participants: [currentUser.name, targetName],
-                        lastMessage: "Chat started",
+                        lastMessage: "",
                         lastUpdated: serverTimestamp(),
                         unreadCounts: {}
                     });
@@ -531,7 +529,7 @@
             isSelectMode = !isSelectMode;
             mergeControls.style.display = isSelectMode ? 'flex' : 'none';
             toggleSelectBtn.style.color = isSelectMode ? 'var(--danger)' : 'var(--primary)';
-            loadInbox(); // Redraw to show checkboxes
+            loadInbox();
         });
 
         confirmMergeBtn.addEventListener('click', async () => {
@@ -549,7 +547,6 @@
 
             const participantArray = Array.from(allParticipants);
             
-            // Create merged thread
             const newRef = await addDoc(collection(db, "threads"), {
                 participants: participantArray,
                 lastMessage: "Group Merge",
@@ -557,7 +554,6 @@
                 unreadCounts: {}
             });
 
-            // Reset mode and open new thread
             isSelectMode = false;
             mergeControls.style.display = 'none';
             toggleSelectBtn.style.color = 'var(--primary)';
@@ -569,37 +565,41 @@
         window.openThread = async (threadId, chatName) => {
             currentChatId = threadId;
             
-            // UI Switch
             inboxView.style.display = 'none';
             chatView.style.display = 'flex';
             
             headerTitle.textContent = chatName;
             backBtn.classList.remove('hidden');
-            inboxActions.classList.add('hidden');
+            inboxActions.style.display = 'none'; // Hide right icons
             chatActions.classList.remove('hidden');
             
-            // Reset input state
             blockedNotice.style.display = 'none';
             inputArea.style.display = 'block';
             blockBtn.textContent = "Block";
             blockBtn.disabled = false;
 
-            // Clear unread
             const threadRef = doc(db, "threads", threadId);
             updateDoc(threadRef, { [`unreadCounts.${currentUser.name}`]: 0 });
 
-            // 1. Messages Listener
             const msgsRef = collection(db, "threads", threadId, "messages");
             const q = query(msgsRef, orderBy("timestamp", "asc"));
 
             if (unsubscribeMessages) unsubscribeMessages();
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                messagesList.innerHTML = '';
-                snapshot.forEach(doc => renderMessage(doc.data()));
-                scrollToBottom();
+                // Clear existing messages but KEEP the empty state prompt element
+                const prompt = emptyStatePrompt;
+                messagesList.innerHTML = ''; 
+                messagesList.appendChild(prompt); // Re-append prompt to list
+
+                if (snapshot.empty) {
+                    prompt.style.display = 'flex';
+                } else {
+                    prompt.style.display = 'none';
+                    snapshot.forEach(doc => renderMessage(doc.data()));
+                    scrollToBottom();
+                }
             });
 
-            // 2. Meta Listener (Blocks/Deletes)
             if (unsubscribeThreadMeta) unsubscribeThreadMeta();
             unsubscribeThreadMeta = onSnapshot(threadRef, (docSnap) => {
                 if (!docSnap.exists()) {
@@ -609,7 +609,6 @@
                 }
                 const data = docSnap.data();
 
-                // Block Logic
                 if (data.blockedBy) {
                     blockedNotice.style.display = 'block';
                     inputArea.style.display = 'none';
@@ -640,18 +639,16 @@
             
             headerTitle.textContent = "My Inbox";
             backBtn.classList.add('hidden');
-            inboxActions.classList.remove('hidden');
+            inboxActions.style.display = 'flex';
             chatActions.classList.add('hidden');
         }
 
-        // --- RENDER MESSAGE ---
         function renderMessage(msg) {
             const div = document.createElement('div');
             const isMe = msg.sender === currentUser.name;
             div.className = `message ${isMe ? 'me' : 'them'}`;
             
             let content = '';
-            // Show name if group chat and not me
             if (!isMe) {
                  content += `<div class="sender-label">${msg.sender}</div>`;
             }
@@ -711,10 +708,9 @@
             const text = messageInput.value.trim();
             if (!text && !selectedFile) return;
 
-            // Clear UI immediately
             messageInput.value = '';
             const fileToSend = selectedFile;
-            clearMediaBtn.click(); // Reset media UI
+            clearMediaBtn.click();
 
             let mediaUrl = null;
             let mediaType = null;
@@ -738,7 +734,6 @@
                     timestamp: serverTimestamp()
                 });
 
-                // Update unread counts
                 const threadSnap = await getDoc(threadRef);
                 if (threadSnap.exists()) {
                     const participants = threadSnap.data().participants;
