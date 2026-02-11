@@ -7,13 +7,14 @@
     <style>
         :root {
             --primary: #0084ff;
+            --primary-dark: #006bcf;
             --danger: #ff3b30;
-            --warning: #ffcc00;
             --bg: #f0f2f5;
             --surface: #ffffff;
-            --text: #050505;
             --bubble-me: #0084ff;
             --bubble-them: #e4e6eb;
+            --text-main: #050505;
+            --text-sub: #65676b;
         }
 
         body {
@@ -23,50 +24,63 @@
             height: 100vh;
             display: flex;
             justify-content: center;
+            overflow: hidden;
         }
 
-        /* --- Login Modal --- */
-        #auth-modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95);
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .auth-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            text-align: center;
-            width: 300px;
-        }
-        .auth-box input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-        }
+        /* --- Global Components --- */
         .btn {
             background: var(--primary);
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 16px;
-            width: 100%;
+            font-size: 15px;
+            font-weight: 600;
+            transition: background 0.2s;
         }
+        .btn:hover { background: var(--primary-dark); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #e4e6eb; color: black; }
+
+        .icon-btn {
+            background: none; border: none; font-size: 22px; cursor: pointer; color: var(--primary);
+            padding: 5px; border-radius: 50%;
+        }
+        .icon-btn:hover { background: rgba(0,0,0,0.05); }
+
+        input[type="text"], input[type="password"] {
+            width: 100%; box-sizing: border-box;
+            padding: 12px; margin: 8px 0;
+            border: 1px solid #ddd; border-radius: 8px;
+            font-size: 16px; outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        /* --- Modals (Auth & New Chat) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            display: flex; /* Flex to center */
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-box {
+            background: white; padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 90%; max-width: 320px;
+            text-align: center;
+        }
+        .hidden { display: none !important; }
 
         /* --- Main App Container --- */
         #app-container {
-            width: 100%;
-            max-width: 480px; /* Mobile View limit */
-            height: 100%;
+            width: 100%; max-width: 480px; height: 100%;
             background: var(--surface);
             display: none; /* Hidden until login */
             flex-direction: column;
@@ -76,249 +90,186 @@
 
         /* --- Header --- */
         header {
-            padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: white;
-            z-index: 10;
-            height: 50px;
+            padding: 0 15px; height: 60px;
+            border-bottom: 1px solid #e4e6eb;
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; z-index: 10; flex-shrink: 0;
         }
-        h2 { margin: 0; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        h2 { font-size: 18px; margin: 0; }
 
-        /* --- Inbox View --- */
+        /* --- Inbox --- */
         #inbox-view {
-            flex: 1;
-            overflow-y: auto;
-            display: flex; /* Flex to show/hide */
-            flex-direction: column;
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column;
         }
         .thread-item {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            padding: 12px 15px;
+            display: flex; align-items: center;
+            cursor: pointer; border-bottom: 1px solid #f0f0f0;
+            transition: background 0.1s;
         }
-        .thread-item:hover { background: #f9f9f9; }
-        .thread-info { flex: 1; margin-left: 10px; }
-        .thread-name { font-weight: bold; }
-        .thread-preview { font-size: 12px; color: #666; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .thread-item:hover { background: #f7f8fa; }
+        
+        .avatar-circle {
+            width: 45px; height: 45px;
+            background: #e4e6eb; color: #555;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 18px;
+            margin-right: 12px; flex-shrink: 0;
+        }
+        
+        .thread-info { flex: 1; overflow: hidden; }
+        .thread-name { font-weight: 600; font-size: 16px; color: var(--text-main); margin-bottom: 4px; }
+        .thread-preview { font-size: 13px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .badge {
-            background: red;
-            color: white;
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            margin-left: 5px;
-            display: none; /* Hidden if 0 */
+            background: var(--danger); color: white;
+            font-size: 11px; padding: 2px 8px;
+            border-radius: 12px; margin-left: auto;
         }
-        .select-mode-checkbox {
-            display: none; /* Hidden unless in merge mode */
-            margin-right: 10px;
-            transform: scale(1.5);
+
+        .select-checkbox {
+            margin-right: 15px; transform: scale(1.3);
+            display: none; /* Hidden unless merge mode */
         }
 
         /* --- Chat View --- */
         #chat-view {
-            flex: 1;
-            display: none; /* Hidden default */
-            flex-direction: column;
-            height: 100%;
+            flex: 1; display: none; flex-direction: column; height: 100%;
+            background: white;
         }
         
-        /* Chat Header specific styles */
-        .chat-header-actions {
-            display: flex;
-            gap: 8px;
-        }
-        .btn-small {
-            padding: 5px 10px;
-            font-size: 12px;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            color: white;
-        }
-        .btn-block { background-color: #888; }
-        .btn-delete { background-color: var(--danger); }
-        .btn-unblock { background-color: var(--primary); }
-
         #messages-list {
-            flex: 1;
-            padding: 15px;
+            flex: 1; padding: 15px;
             overflow-y: auto;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+            display: flex; flex-direction: column; gap: 8px;
+            background: #fff;
         }
+
         .message {
-            max-width: 70%;
-            padding: 8px 12px;
-            border-radius: 18px;
-            font-size: 14px;
-            position: relative;
-            word-wrap: break-word;
+            max-width: 75%; padding: 10px 14px;
+            border-radius: 18px; font-size: 15px;
+            position: relative; word-wrap: break-word; line-height: 1.4;
         }
         .message.me {
             align-self: flex-end;
-            background-color: var(--bubble-me);
-            color: white;
+            background-color: var(--bubble-me); color: white;
             border-bottom-right-radius: 4px;
         }
         .message.them {
             align-self: flex-start;
-            background-color: var(--bubble-them);
-            color: black;
+            background-color: var(--bubble-them); color: black;
             border-bottom-left-radius: 4px;
         }
         .message img, .message video {
-            max-width: 100%;
-            border-radius: 12px;
-            margin-bottom: 5px;
-            display: block;
+            max-width: 100%; border-radius: 12px; display: block; margin-top: 5px;
         }
-        .sender-name {
-            font-size: 10px;
-            margin-bottom: 2px;
-            opacity: 0.7;
-            display: block;
-        }
-        .system-message {
-            align-self: center;
-            background: #eee;
-            color: #555;
-            font-size: 12px;
-            padding: 4px 10px;
-            border-radius: 10px;
-        }
+        .sender-label { font-size: 11px; color: #888; margin-bottom: 2px; margin-left: 10px; }
 
-        /* --- Sandbox Input Area --- */
+        /* --- Footer / Input --- */
         #input-area {
-            border-top: 1px solid #ddd;
-            background: white;
-            padding: 10px;
+            border-top: 1px solid #e4e6eb;
+            background: white; padding: 10px;
+        }
+        .input-row { display: flex; align-items: center; gap: 10px; }
+        #message-input {
+            flex: 1; padding: 10px 15px;
+            border-radius: 20px; border: 1px solid #ddd;
+            background: #f0f2f5; outline: none;
         }
         #sandbox-preview {
-            display: none; /* Hidden until media selected */
-            padding: 10px;
-            background: #f0f0f0;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            position: relative;
+            padding: 8px; background: #f0f0f0; border-radius: 8px;
+            margin-bottom: 8px; display: none; position: relative;
         }
-        #sandbox-preview img, #sandbox-preview video {
-            max-height: 100px;
-            border-radius: 4px;
-        }
-        #clear-media {
-            position: absolute;
-            top: 5px; right: 5px;
-            background: red; color: white;
-            border: none; border-radius: 50%;
-            width: 20px; height: 20px;
-            cursor: pointer;
-        }
-        .input-row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        #message-input {
-            flex: 1;
-            padding: 10px;
-            border-radius: 20px;
-            border: 1px solid #ddd;
-            outline: none;
-        }
-        .icon-btn {
-            background: none; border: none; font-size: 20px; cursor: pointer; color: var(--primary);
+        #sandbox-preview img, #sandbox-preview video { max-height: 80px; border-radius: 4px; }
+        .remove-media {
+            position: absolute; top: -5px; right: -5px;
+            background: #333; color: white; border-radius: 50%;
+            width: 20px; height: 20px; text-align: center; line-height: 20px;
+            cursor: pointer; font-size: 12px;
         }
 
-        /* --- Merge Controls --- */
+        /* --- Alerts/Notices --- */
+        #blocked-notice {
+            background: #fff5f5; color: var(--danger);
+            text-align: center; padding: 15px; font-weight: 500;
+            display: none; border-top: 1px solid #ffe0e0;
+        }
         #merge-controls {
-            padding: 10px;
-            background: #e4e6eb;
-            display: none; /* Hidden unless select mode */
-            justify-content: space-between;
-            align-items: center;
+            padding: 10px 15px; background: #e7f3ff;
+            display: none; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #d0e5ff;
         }
-
-        /* Helper */
-        .hidden { display: none !important; }
-        .blocked-notice {
-            text-align: center;
-            padding: 10px;
-            color: red;
-            background: #ffebeb;
-            font-size: 14px;
-            display: none;
-        }
+        
+        .chat-actions { display: flex; gap: 8px; }
+        .btn-mini { padding: 6px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; color: white; }
     </style>
 </head>
 <body>
 
-    <div id="auth-modal">
-        <div class="auth-box">
-            <h2>Welcome to My Inbox</h2>
-            <input type="text" id="login-name" placeholder="Enter your Name" />
-            <input type="password" id="login-pin" placeholder="4-Digit PIN" maxlength="4" />
-            <button class="btn" id="login-btn">Enter Inbox</button>
-            <p id="login-error" style="color:red; font-size:12px; margin-top:5px;"></p>
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 style="margin-bottom: 15px;">My Inbox Login</h2>
+            <input type="text" id="login-name" placeholder="Enter your Name" autocomplete="off" />
+            <input type="password" id="login-pin" placeholder="4-Digit PIN" maxlength="4" pattern="\d*" inputmode="numeric" />
+            <button class="btn" id="login-btn" style="width:100%; margin-top: 10px;">Enter</button>
+            <p id="login-error" style="color:var(--danger); font-size:13px; margin-top:10px;"></p>
+        </div>
+    </div>
+
+    <div id="new-chat-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>Start New Chat</h3>
+            <p style="color:#666; font-size:14px;">Enter the exact username of the person you want to message.</p>
+            <input type="text" id="new-chat-name" placeholder="Username (e.g. John)" />
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn btn-secondary" id="cancel-chat-btn" style="flex:1;">Cancel</button>
+                <button class="btn" id="confirm-chat-btn" style="flex:1;">Chat</button>
+            </div>
         </div>
     </div>
 
     <div id="app-container">
         
-        <header id="inbox-header">
-            <h2>My Inbox</h2>
-            <div>
-                <button class="icon-btn" id="toggle-select-mode" title="Select to Merge">Select</button>
-                <button class="icon-btn" id="create-chat-btn" title="New Chat" style="margin-left:10px;">+</button>
+        <header id="main-header">
+            <div id="header-left" style="display:flex; align-items:center;">
+                <button class="icon-btn hidden" id="back-btn" style="margin-right: 5px;">←</button>
+                <h2 id="header-title">My Inbox</h2>
+            </div>
+            <div id="header-right">
+                <span id="inbox-actions">
+                    <button class="icon-btn" id="toggle-select-mode" title="Merge Threads">⚡</button>
+                    <button class="icon-btn" id="open-new-chat-btn" title="New Chat" style="margin-left:5px;">+</button>
+                </span>
+                <span id="chat-actions" class="hidden chat-actions">
+                    <button id="block-btn" class="btn-mini" style="background:#888;">Block</button>
+                    <button id="delete-btn" class="btn-mini btn-danger">Delete</button>
+                </span>
             </div>
         </header>
 
         <div id="merge-controls">
-            <span>Select threads to merge</span>
-            <button class="btn" id="confirm-merge-btn" style="width: auto; padding: 5px 15px;">Merge</button>
+            <span style="font-size:14px; color:var(--primary);">Select threads to merge</span>
+            <button class="btn" id="confirm-merge-btn" style="padding: 5px 15px; font-size:13px;">Merge Selected</button>
         </div>
 
-        <div id="inbox-view">
-            </div>
+        <div id="inbox-view"></div>
 
         <div id="chat-view">
-            <header>
-                <div style="display: flex; align-items: center;">
-                    <button class="icon-btn" id="back-btn" style="margin-right: 10px;">←</button>
-                    <h2 id="chat-title">Chat Name</h2>
-                </div>
-                <div class="chat-header-actions">
-                    <button id="block-btn" class="btn-small btn-block">Block</button>
-                    <button id="delete-btn" class="btn-small btn-delete">Delete</button>
-                </div>
-            </header>
-
-            <div id="messages-list">
-                </div>
-
-            <div id="blocked-notice" class="blocked-notice">
-                This conversation is blocked.
-            </div>
+            <div id="messages-list"></div>
+            
+            <div id="blocked-notice">This conversation is blocked.</div>
 
             <div id="input-area">
                 <div id="sandbox-preview">
-                    <button id="clear-media">×</button>
+                    <div class="remove-media" id="clear-media">×</div>
                     <div id="media-container"></div>
                 </div>
 
                 <div class="input-row">
                     <input type="file" id="media-input" accept="image/*,video/*" style="display: none;" />
                     <button class="icon-btn" id="attach-btn">📎</button>
-                    <input type="text" id="message-input" placeholder="Type a message..." />
-                    <button class="icon-btn" id="send-btn">➤</button>
+                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off"/>
+                    <button class="icon-btn" id="send-btn" style="color:var(--primary);">➤</button>
                 </div>
             </div>
         </div>
@@ -328,12 +279,11 @@
     <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.m4a" preload="auto"></audio>
 
     <script type="module">
-        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, getDoc, setDoc, deleteDoc, updateDoc, serverTimestamp, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.2.0/firebase-storage.js";
 
-        // --- CONFIGURATION ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyBsIfcS2kY29alWNQBqaLwQ9To4LwlcRD8",
             authDomain: "myinbox-f9937.firebaseapp.com",
@@ -344,85 +294,107 @@
             measurementId: "G-VKN6E7XTF8"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        // --- STATE ---
+        // --- STATE VARIABLES ---
         let currentUser = null;
         let currentChatId = null;
         let selectedFile = null;
         let isSelectMode = false;
         let unsubscribeMessages = null;
-        let unsubscribeThreadMeta = null; // Listener for thread status (blocked/deleted)
+        let unsubscribeThreadMeta = null;
 
-        // --- DOM ELEMENTS ---
+        // --- DOM REFERENCES ---
+        // Auth
         const authModal = document.getElementById('auth-modal');
+        const loginBtn = document.getElementById('login-btn');
         const loginName = document.getElementById('login-name');
         const loginPin = document.getElementById('login-pin');
-        const loginBtn = document.getElementById('login-btn');
         const loginError = document.getElementById('login-error');
+
+        // Main UI
         const appContainer = document.getElementById('app-container');
         const inboxView = document.getElementById('inbox-view');
         const chatView = document.getElementById('chat-view');
-        const inboxHeader = document.getElementById('inbox-header');
+        const headerTitle = document.getElementById('header-title');
         const backBtn = document.getElementById('back-btn');
+        const inboxActions = document.getElementById('inbox-actions');
+        const chatActions = document.getElementById('chat-actions');
+
+        // New Chat Modal
+        const newChatModal = document.getElementById('new-chat-modal');
+        const openNewChatBtn = document.getElementById('open-new-chat-btn');
+        const cancelChatBtn = document.getElementById('cancel-chat-btn');
+        const confirmChatBtn = document.getElementById('confirm-chat-btn');
+        const newChatNameInput = document.getElementById('new-chat-name');
+
+        // Merge
+        const toggleSelectBtn = document.getElementById('toggle-select-mode');
+        const mergeControls = document.getElementById('merge-controls');
+        const confirmMergeBtn = document.getElementById('confirm-merge-btn');
+
+        // Chat Interface
         const messagesList = document.getElementById('messages-list');
         const messageInput = document.getElementById('message-input');
         const sendBtn = document.getElementById('send-btn');
-        const createChatBtn = document.getElementById('create-chat-btn');
         const blockBtn = document.getElementById('block-btn');
         const deleteBtn = document.getElementById('delete-btn');
         const blockedNotice = document.getElementById('blocked-notice');
         const inputArea = document.getElementById('input-area');
         
-        // Sandbox Elements
+        // Media
         const attachBtn = document.getElementById('attach-btn');
         const mediaInput = document.getElementById('media-input');
         const sandboxPreview = document.getElementById('sandbox-preview');
         const mediaContainer = document.getElementById('media-container');
         const clearMediaBtn = document.getElementById('clear-media');
 
-        // Merge Elements
-        const toggleSelectBtn = document.getElementById('toggle-select-mode');
-        const mergeControls = document.getElementById('merge-controls');
-        const confirmMergeBtn = document.getElementById('confirm-merge-btn');
+        // --- AUTHENTICATION ---
+        loginBtn.addEventListener('click', handleLogin);
+        loginPin.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleLogin(); });
 
-        // --- AUTH LOGIC ---
-        loginBtn.addEventListener('click', async () => {
+        async function handleLogin() {
             const name = loginName.value.trim();
             const pin = loginPin.value.trim();
 
             if (!name || pin.length !== 4) {
-                loginError.textContent = "Please enter a name and a 4-digit PIN.";
+                loginError.textContent = "Please enter name and 4-digit PIN.";
                 return;
             }
+
+            loginBtn.textContent = "Loading...";
+            loginBtn.disabled = true;
 
             const userId = name.toLowerCase().replace(/\s+/g, '-');
             const userDocRef = doc(db, "users", userId);
 
             try {
                 const userSnap = await getDoc(userDocRef);
-
                 if (userSnap.exists()) {
                     if (userSnap.data().pin === pin) {
                         currentUser = { id: userId, ...userSnap.data() };
                         enterApp();
                     } else {
                         loginError.textContent = "Incorrect PIN.";
+                        loginBtn.textContent = "Enter";
+                        loginBtn.disabled = false;
                     }
                 } else {
+                    // Create new user
                     const newUser = { name: name, pin: pin, createdAt: serverTimestamp() };
                     await setDoc(userDocRef, newUser);
                     currentUser = { id: userId, ...newUser };
                     enterApp();
                 }
-            } catch (error) {
-                console.error("Login Error:", error);
-                loginError.textContent = "Connection error. Check console.";
+            } catch (err) {
+                console.error(err);
+                loginError.textContent = "Connection failed.";
+                loginBtn.textContent = "Enter";
+                loginBtn.disabled = false;
             }
-        });
+        }
 
         function enterApp() {
             authModal.style.display = 'none';
@@ -433,66 +405,143 @@
         // --- INBOX LOGIC ---
         function loadInbox() {
             const threadsRef = collection(db, "threads");
+            // Basic query: am I a participant?
             const q = query(threadsRef, where("participants", "array-contains", currentUser.name), orderBy("lastUpdated", "desc"));
 
             onSnapshot(q, (snapshot) => {
                 inboxView.innerHTML = '';
+                if (snapshot.empty) {
+                    inboxView.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">No messages yet.<br>Click + to start.</div>';
+                    return;
+                }
+
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     const threadId = docSnap.id;
-                    
                     const otherParticipants = data.participants.filter(p => p !== currentUser.name);
                     const chatName = otherParticipants.join(", ");
                     const unreadCount = (data.unreadCounts && data.unreadCounts[currentUser.name]) || 0;
-
-                    if (unreadCount > 0 && currentChatId !== threadId) {
-                        document.getElementById('notif-sound').play().catch(e => console.log("Audio play prevented"));
-                    }
-
-                    const div = document.createElement('div');
-                    div.className = 'thread-item';
-                    div.innerHTML = `
-                        <input type="checkbox" class="select-mode-checkbox ${isSelectMode ? '' : 'hidden'}" data-id="${threadId}" data-participants="${otherParticipants.join(',')}">
-                        <div class="thread-info" onclick="openThread('${threadId}', '${chatName}')">
-                            <div class="thread-name">${chatName} <span class="badge" style="display: ${unreadCount > 0 ? 'inline-block' : 'none'}">${unreadCount}</span></div>
-                            <div class="thread-preview">${data.lastMessage || 'No messages yet'}</div>
-                        </div>
-                    `;
                     
-                    const checkbox = div.querySelector('input');
-                    checkbox.addEventListener('click', (e) => e.stopPropagation());
-                    if(isSelectMode) {
-                        div.querySelector('.thread-info').onclick = (e) => {
-                            checkbox.checked = !checkbox.checked;
-                        };
+                    // Initials for avatar
+                    const initials = chatName.substring(0, 1).toUpperCase();
+
+                    // Sound alert
+                    if (unreadCount > 0 && currentChatId !== threadId) {
+                        document.getElementById('notif-sound').play().catch(() => {});
                     }
 
-                    inboxView.appendChild(div);
+                    const item = document.createElement('div');
+                    item.className = 'thread-item';
+                    item.innerHTML = `
+                        <input type="checkbox" class="select-checkbox ${isSelectMode ? 'block' : ''}" data-id="${threadId}" data-participants="${otherParticipants.join(',')}">
+                        <div class="avatar-circle">${initials}</div>
+                        <div class="thread-info">
+                            <div class="thread-name">${chatName}</div>
+                            <div class="thread-preview" style="${unreadCount > 0 ? 'font-weight:bold; color:black;' : ''}">
+                                ${data.lastMessage || 'Start conversation'}
+                            </div>
+                        </div>
+                        ${unreadCount > 0 ? `<div class="badge">${unreadCount}</div>` : ''}
+                    `;
+
+                    // Click logic
+                    const checkbox = item.querySelector('.select-checkbox');
+                    const infoDiv = item.querySelector('.thread-info');
+                    
+                    if (isSelectMode) {
+                        checkbox.style.display = 'block';
+                        item.onclick = () => checkbox.checked = !checkbox.checked;
+                    } else {
+                        item.onclick = () => openThread(threadId, chatName);
+                    }
+
+                    inboxView.appendChild(item);
                 });
             });
+        }
+
+        // --- NEW CHAT LOGIC (Fixed) ---
+        openNewChatBtn.addEventListener('click', () => {
+            newChatNameInput.value = '';
+            newChatModal.classList.remove('hidden');
+            newChatNameInput.focus();
+        });
+
+        cancelChatBtn.addEventListener('click', () => {
+            newChatModal.classList.add('hidden');
+        });
+
+        confirmChatBtn.addEventListener('click', createChat);
+        newChatNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') createChat(); });
+
+        async function createChat() {
+            const targetName = newChatNameInput.value.trim();
+            if (!targetName) return;
+            if (targetName.toLowerCase() === currentUser.name.toLowerCase()) {
+                alert("You cannot message yourself.");
+                return;
+            }
+
+            confirmChatBtn.textContent = "Checking...";
+            confirmChatBtn.disabled = true;
+
+            try {
+                // 1. Check if thread already exists
+                const threadsRef = collection(db, "threads");
+                const q = query(threadsRef, where("participants", "array-contains", currentUser.name));
+                const snapshot = await getDocs(q);
+
+                let existingThreadId = null;
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // Check if this thread has exactly these 2 people
+                    if (data.participants.length === 2 && data.participants.includes(targetName)) {
+                        existingThreadId = doc.id;
+                    }
+                });
+
+                newChatModal.classList.add('hidden');
+                confirmChatBtn.textContent = "Chat";
+                confirmChatBtn.disabled = false;
+
+                if (existingThreadId) {
+                    // Open existing
+                    openThread(existingThreadId, targetName);
+                } else {
+                    // Create new
+                    const newDoc = await addDoc(collection(db, "threads"), {
+                        participants: [currentUser.name, targetName],
+                        lastMessage: "Chat started",
+                        lastUpdated: serverTimestamp(),
+                        unreadCounts: {}
+                    });
+                    openThread(newDoc.id, targetName);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Error creating chat.");
+                confirmChatBtn.disabled = false;
+            }
         }
 
         // --- MERGE LOGIC ---
         toggleSelectBtn.addEventListener('click', () => {
             isSelectMode = !isSelectMode;
             mergeControls.style.display = isSelectMode ? 'flex' : 'none';
-            toggleSelectBtn.textContent = isSelectMode ? 'Cancel' : 'Select';
-            
-            document.querySelectorAll('.select-mode-checkbox').forEach(box => {
-                box.classList.toggle('hidden', !isSelectMode);
-                box.checked = false; 
-            });
-            loadInbox(); 
+            toggleSelectBtn.style.color = isSelectMode ? 'var(--danger)' : 'var(--primary)';
+            loadInbox(); // Redraw to show checkboxes
         });
 
         confirmMergeBtn.addEventListener('click', async () => {
-            const checkboxes = document.querySelectorAll('.select-mode-checkbox:checked');
+            const checkboxes = document.querySelectorAll('.select-checkbox:checked');
             if (checkboxes.length < 2) {
-                alert("Please select at least 2 threads to merge.");
+                alert("Select at least 2 threads to merge.");
                 return;
             }
 
-            let allParticipants = new Set([currentUser.name]);
+            const allParticipants = new Set([currentUser.name]);
             checkboxes.forEach(box => {
                 const parts = box.dataset.participants.split(',');
                 parts.forEach(p => allParticipants.add(p));
@@ -500,166 +549,118 @@
 
             const participantArray = Array.from(allParticipants);
             
-            const newThreadRef = await addDoc(collection(db, "threads"), {
+            // Create merged thread
+            const newRef = await addDoc(collection(db, "threads"), {
                 participants: participantArray,
-                lastMessage: "Group created via Merge",
+                lastMessage: "Group Merge",
                 lastUpdated: serverTimestamp(),
                 unreadCounts: {}
             });
 
+            // Reset mode and open new thread
             isSelectMode = false;
             mergeControls.style.display = 'none';
-            toggleSelectBtn.textContent = 'Select';
+            toggleSelectBtn.style.color = 'var(--primary)';
             loadInbox();
-            
-            openThread(newThreadRef.id, participantArray.filter(p => p !== currentUser.name).join(", "));
+            openThread(newRef.id, participantArray.filter(p => p !== currentUser.name).join(", "));
         });
-
-        // --- NEW CHAT LOGIC ---
-        createChatBtn.addEventListener('click', async () => {
-            const targetName = prompt("Enter the exact name of the person you want to message:");
-            if (!targetName) return;
-            if (targetName === currentUser.name) return alert("You can't message yourself.");
-
-            await addDoc(collection(db, "threads"), {
-                participants: [currentUser.name, targetName],
-                lastMessage: "Chat started",
-                lastUpdated: serverTimestamp(),
-                unreadCounts: {}
-            });
-        });
-
 
         // --- CHAT LOGIC ---
-        window.openThread = (threadId, chatName) => {
-            if (isSelectMode) return; 
-
+        window.openThread = async (threadId, chatName) => {
             currentChatId = threadId;
-            document.getElementById('chat-title').textContent = chatName;
             
+            // UI Switch
             inboxView.style.display = 'none';
-            inboxHeader.style.display = 'none';
             chatView.style.display = 'flex';
-
-            // Reset UI State
+            
+            headerTitle.textContent = chatName;
+            backBtn.classList.remove('hidden');
+            inboxActions.classList.add('hidden');
+            chatActions.classList.remove('hidden');
+            
+            // Reset input state
             blockedNotice.style.display = 'none';
             inputArea.style.display = 'block';
             blockBtn.textContent = "Block";
-            blockBtn.className = "btn-small btn-block";
+            blockBtn.disabled = false;
 
-            // Mark Read
+            // Clear unread
             const threadRef = doc(db, "threads", threadId);
-            updateDoc(threadRef, {
-                [`unreadCounts.${currentUser.name}`]: 0
-            });
+            updateDoc(threadRef, { [`unreadCounts.${currentUser.name}`]: 0 });
 
-            // 1. Listen for Messages
+            // 1. Messages Listener
             const msgsRef = collection(db, "threads", threadId, "messages");
             const q = query(msgsRef, orderBy("timestamp", "asc"));
 
             if (unsubscribeMessages) unsubscribeMessages();
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
                 messagesList.innerHTML = '';
-                snapshot.forEach(doc => {
-                    renderMessage(doc.data());
-                });
+                snapshot.forEach(doc => renderMessage(doc.data()));
                 scrollToBottom();
             });
 
-            // 2. Listen for Thread Metadata (Blocked/Deleted status)
+            // 2. Meta Listener (Blocks/Deletes)
             if (unsubscribeThreadMeta) unsubscribeThreadMeta();
             unsubscribeThreadMeta = onSnapshot(threadRef, (docSnap) => {
                 if (!docSnap.exists()) {
-                    // Thread deleted!
-                    alert("This chat has been deleted.");
+                    alert("Thread was deleted.");
                     backToInbox();
                     return;
                 }
-                
                 const data = docSnap.data();
-                
-                // Handle Blocking
+
+                // Block Logic
                 if (data.blockedBy) {
                     blockedNotice.style.display = 'block';
                     inputArea.style.display = 'none';
-                    
                     if (data.blockedBy === currentUser.id) {
+                        blockedNotice.textContent = "You blocked this chat.";
                         blockBtn.textContent = "Unblock";
-                        blockBtn.className = "btn-small btn-unblock";
-                        blockedNotice.textContent = "You have blocked this user.";
                     } else {
-                        blockBtn.textContent = "Block"; // Can't block a blocker, just default
-                        blockBtn.disabled = true;
                         blockedNotice.textContent = "You have been blocked.";
+                        blockBtn.disabled = true;
                     }
                 } else {
                     blockedNotice.style.display = 'none';
                     inputArea.style.display = 'block';
                     blockBtn.textContent = "Block";
-                    blockBtn.className = "btn-small btn-block";
-                    blockBtn.disabled = false;
                 }
             });
         };
+
+        backBtn.addEventListener('click', backToInbox);
 
         function backToInbox() {
             currentChatId = null;
             if (unsubscribeMessages) unsubscribeMessages();
             if (unsubscribeThreadMeta) unsubscribeThreadMeta();
+
             chatView.style.display = 'none';
             inboxView.style.display = 'flex';
-            inboxHeader.style.display = 'flex';
+            
+            headerTitle.textContent = "My Inbox";
+            backBtn.classList.add('hidden');
+            inboxActions.classList.remove('hidden');
+            chatActions.classList.add('hidden');
         }
 
-        backBtn.addEventListener('click', backToInbox);
-
-        // --- BLOCK & DELETE BUTTONS ---
-        blockBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
-            const threadRef = doc(db, "threads", currentChatId);
-            const docSnap = await getDoc(threadRef);
-            if (!docSnap.exists()) return;
-
-            const isCurrentlyBlocked = docSnap.data().blockedBy === currentUser.id;
-
-            if (isCurrentlyBlocked) {
-                // UNBLOCK ACTION
-                if(confirm("Unblock this user?")) {
-                    await updateDoc(threadRef, { blockedBy: null });
-                }
-            } else {
-                // BLOCK ACTION
-                if(confirm("Are you sure you want to block this user? You will not receive messages from them.")) {
-                    await updateDoc(threadRef, { blockedBy: currentUser.id });
-                }
-            }
-        });
-
-        deleteBtn.addEventListener('click', async () => {
-            if (!currentChatId) return;
-            if (confirm("Are you sure? This will permanently delete this conversation for everyone.")) {
-                const threadRef = doc(db, "threads", currentChatId);
-                await deleteDoc(threadRef);
-                // The onSnapshot listener will handle the UI redirect
-            }
-        });
-
+        // --- RENDER MESSAGE ---
         function renderMessage(msg) {
             const div = document.createElement('div');
             const isMe = msg.sender === currentUser.name;
             div.className = `message ${isMe ? 'me' : 'them'}`;
             
             let content = '';
-            
-            if (msg.sender !== currentUser.name && !isMe) {
-                 content += `<span class="sender-name">${msg.sender}</span>`;
+            // Show name if group chat and not me
+            if (!isMe) {
+                 content += `<div class="sender-label">${msg.sender}</div>`;
             }
 
             if (msg.mediaUrl) {
                 if (msg.mediaType && msg.mediaType.startsWith('video')) {
                     content += `<video src="${msg.mediaUrl}" controls></video>`;
                 } else {
-                    content += `<img src="${msg.mediaUrl}" alt="image" />`;
+                    content += `<img src="${msg.mediaUrl}" alt="media" />`;
                 }
             }
             if (msg.text) {
@@ -674,7 +675,7 @@
             messagesList.scrollTop = messagesList.scrollHeight;
         }
 
-        // --- SANDBOX & SENDING ---
+        // --- SENDING ---
         attachBtn.addEventListener('click', () => mediaInput.click());
 
         mediaInput.addEventListener('change', (e) => {
@@ -683,11 +684,11 @@
             selectedFile = file;
             sandboxPreview.style.display = 'block';
             mediaContainer.innerHTML = '';
+            
             const url = URL.createObjectURL(file);
             if (file.type.startsWith('video')) {
                 const vid = document.createElement('video');
-                vid.src = url;
-                vid.controls = true;
+                vid.src = url; vid.controls = true;
                 mediaContainer.appendChild(vid);
             } else {
                 const img = document.createElement('img');
@@ -703,54 +704,85 @@
             mediaContainer.innerHTML = '';
         });
 
-        sendBtn.addEventListener('click', async () => {
+        sendBtn.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        async function sendMessage() {
             const text = messageInput.value.trim();
             if (!text && !selectedFile) return;
 
+            // Clear UI immediately
             messageInput.value = '';
             const fileToSend = selectedFile;
-            clearMediaBtn.click(); 
+            clearMediaBtn.click(); // Reset media UI
 
             let mediaUrl = null;
             let mediaType = null;
 
-            if (fileToSend) {
-                mediaType = fileToSend.type;
-                const storageRef = ref(storage, `chat-media/${Date.now()}_${fileToSend.name}`);
-                const snapshot = await uploadBytes(storageRef, fileToSend);
-                mediaUrl = await getDownloadURL(snapshot.ref);
-            }
-
-            const threadRef = doc(db, "threads", currentChatId);
-            const messagesRef = collection(threadRef, "messages");
-
-            await addDoc(messagesRef, {
-                text: text,
-                sender: currentUser.name,
-                mediaUrl: mediaUrl,
-                mediaType: mediaType,
-                timestamp: serverTimestamp()
-            });
-
-            // Update thread metadata
-            const threadSnap = await getDoc(threadRef);
-            if (!threadSnap.exists()) return; // Edge case: thread deleted while typing
-
-            const participants = threadSnap.data().participants;
-            let unreadUpdates = {};
-            const currentCounts = threadSnap.data().unreadCounts || {};
-            
-            participants.forEach(p => {
-                if (p !== currentUser.name) {
-                    unreadUpdates[`unreadCounts.${p}`] = (currentCounts[p] || 0) + 1;
+            try {
+                if (fileToSend) {
+                    mediaType = fileToSend.type;
+                    const storageRef = ref(storage, `chat-media/${Date.now()}_${fileToSend.name}`);
+                    const snapshot = await uploadBytes(storageRef, fileToSend);
+                    mediaUrl = await getDownloadURL(snapshot.ref);
                 }
-            });
 
-            await updateDoc(threadRef, {
-                lastMessage: text || (mediaType ? "Sent an attachment" : "New Message"),
-                lastUpdated: serverTimestamp(),
-                ...unreadUpdates
-            });
+                const threadRef = doc(db, "threads", currentChatId);
+                const messagesRef = collection(threadRef, "messages");
+
+                await addDoc(messagesRef, {
+                    text: text,
+                    sender: currentUser.name,
+                    mediaUrl: mediaUrl,
+                    mediaType: mediaType,
+                    timestamp: serverTimestamp()
+                });
+
+                // Update unread counts
+                const threadSnap = await getDoc(threadRef);
+                if (threadSnap.exists()) {
+                    const participants = threadSnap.data().participants;
+                    let unreadUpdates = {};
+                    const currentCounts = threadSnap.data().unreadCounts || {};
+                    
+                    participants.forEach(p => {
+                        if (p !== currentUser.name) {
+                            unreadUpdates[`unreadCounts.${p}`] = (currentCounts[p] || 0) + 1;
+                        }
+                    });
+
+                    await updateDoc(threadRef, {
+                        lastMessage: text || (mediaType ? "Sent an attachment" : "Message"),
+                        lastUpdated: serverTimestamp(),
+                        ...unreadUpdates
+                    });
+                }
+            } catch (e) {
+                console.error("Send failed", e);
+                alert("Failed to send message.");
+            }
+        }
+
+        // --- BLOCK / DELETE ---
+        blockBtn.addEventListener('click', async () => {
+            if (!currentChatId) return;
+            const threadRef = doc(db, "threads", currentChatId);
+            const docSnap = await getDoc(threadRef);
+            if (!docSnap.exists()) return;
+
+            const isBlockedByMe = docSnap.data().blockedBy === currentUser.id;
+
+            if (isBlockedByMe) {
+                if(confirm("Unblock this user?")) await updateDoc(threadRef, { blockedBy: null });
+            } else {
+                if(confirm("Block this user? You won't receive messages.")) await updateDoc(threadRef, { blockedBy: currentUser.id });
+            }
+        });
+
+        deleteBtn.addEventListener('click', async () => {
+            if (confirm("Delete this conversation permanently for EVERYONE?")) {
+                await deleteDoc(doc(db, "threads", currentChatId));
+            }
         });
 
     </script>
