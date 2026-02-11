@@ -73,7 +73,7 @@
         /* --- Main App Container --- */
         #app-container {
             width: 100%; max-width: 480px; 
-            height: 100%; /* Fills the body's 100dvh */
+            height: 100%; 
             background: var(--surface);
             display: none; /* Hidden until login */
             flex-direction: column;
@@ -430,7 +430,8 @@
         // --- INBOX LOGIC ---
         function loadInbox() {
             const threadsRef = collection(db, "threads");
-            const q = query(threadsRef, where("participants", "array-contains", currentUser.name), orderBy("lastUpdated", "desc"));
+            // FIXED QUERY: Removed orderBy to avoid missing Index error
+            const q = query(threadsRef, where("participants", "array-contains", currentUser.name));
 
             onSnapshot(q, (snapshot) => {
                 inboxView.innerHTML = '';
@@ -439,9 +440,22 @@
                     return;
                 }
 
+                // SORTING IN JS instead of Firestore to prevent Index Errors
+                let threads = [];
                 snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const threadId = docSnap.id;
+                    threads.push({ id: docSnap.id, data: docSnap.data() });
+                });
+
+                // Sort by lastUpdated descending (newest first)
+                threads.sort((a, b) => {
+                    const timeA = a.data.lastUpdated ? a.data.lastUpdated.seconds : 0;
+                    const timeB = b.data.lastUpdated ? b.data.lastUpdated.seconds : 0;
+                    return timeB - timeA;
+                });
+
+                threads.forEach(thread => {
+                    const data = thread.data;
+                    const threadId = thread.id;
                     const otherParticipants = data.participants.filter(p => p !== currentUser.name);
                     const chatName = otherParticipants.join(", ");
                     const unreadCount = (data.unreadCounts && data.unreadCounts[currentUser.name]) || 0;
@@ -506,6 +520,7 @@
             confirmChatBtn.disabled = true;
 
             try {
+                // Check if chat exists (manually to avoid index issues)
                 const threadsRef = collection(db, "threads");
                 const q = query(threadsRef, where("participants", "array-contains", currentUser.name));
                 const snapshot = await getDocs(q);
