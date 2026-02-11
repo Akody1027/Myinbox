@@ -595,6 +595,12 @@
             openThread(newRef.id, participantArray.filter(p => p !== currentUser.name).join(", "));
         });
 
+        
+        
+        
+        
+        
+        
         // --- CHAT LOGIC ---
         window.openThread = async (threadId, chatName) => {
             currentChatId = threadId;
@@ -618,8 +624,25 @@
             const msgsRef = collection(db, "threads", threadId, "messages");
             const q = query(msgsRef, orderBy("timestamp", "asc"));
 
-            if (unsubscribeMessages) unsubscribeMessages();
+            if (unsubscribeMessages) unsubscribeMessages();         
+                        // Track initial load so we don't play sound for history
+            let isFirstLoad = true;
+
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
+                // 1. Handle Sound for NEW messages
+                if (!isFirstLoad) {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === "added") {
+                            const newMsg = change.doc.data();
+                            // Only play if it's NOT me
+                            if (newMsg.sender !== currentUser.name) {
+                                document.getElementById('notif-sound').play().catch(() => {});
+                            }
+                        }
+                    });
+                }
+
+                // 2. Render Messages
                 const prompt = emptyStatePrompt;
                 messagesList.innerHTML = ''; 
                 messagesList.appendChild(prompt); 
@@ -631,6 +654,9 @@
                     snapshot.forEach(doc => renderMessage(doc.data()));
                     scrollToBottom();
                 }
+
+                // Mark first load as complete
+                isFirstLoad = false;
             });
 
             if (unsubscribeThreadMeta) unsubscribeThreadMeta();
@@ -816,5 +842,6 @@
     </script>
 </body>
 </html>
+
 
 
