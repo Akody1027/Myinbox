@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>My Inbox</title>
     <style>
         :root {
@@ -24,11 +24,13 @@
             background-color: var(--bg);
             margin: 0;
             padding: 0;
-            height: 100vh;
+            /* CRITICAL FIX: Use dvh (dynamic viewport height) for mobile browsers */
+            height: 100vh; 
+            height: 100dvh; 
             width: 100vw;
             display: flex;
             justify-content: center;
-            overflow: hidden; /* Prevents whole page scrolling */
+            overflow: hidden; 
         }
 
         /* --- Global Components --- */
@@ -70,7 +72,8 @@
 
         /* --- Main App Container --- */
         #app-container {
-            width: 100%; max-width: 480px; height: 100%;
+            width: 100%; max-width: 480px; 
+            height: 100%; /* Fills the body's 100dvh */
             background: var(--surface);
             display: none; /* Hidden until login */
             flex-direction: column;
@@ -114,14 +117,24 @@
 
         /* --- Chat View --- */
         #chat-view {
-            flex: 1; display: none; flex-direction: column; height: 100%;
-            background: white; position: relative;
+            flex: 1; 
+            display: none; 
+            flex-direction: column; 
+            height: 100%;
+            background: white; 
+            position: relative;
+            overflow: hidden; /* Contains children */
         }
         
         #messages-list {
-            flex: 1; padding: 15px; overflow-y: auto;
-            display: flex; flex-direction: column; gap: 8px;
-            background: #fff; position: relative;
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto;
+            display: flex; 
+            flex-direction: column; 
+            gap: 8px;
+            background: #fff; 
+            position: relative;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -132,10 +145,11 @@
             transform: translate(-50%, -50%);
             text-align: center;
             color: #888;
-            display: none; /* Toggled via JS */
+            display: none; 
             flex-direction: column;
             align-items: center;
             width: 80%;
+            pointer-events: none; /* Let clicks pass through */
         }
         #empty-state-prompt svg { width: 60px; height: 60px; margin-bottom: 10px; fill: #ddd; }
 
@@ -157,8 +171,12 @@
 
         /* --- Footer / Input --- */
         #input-area {
-            border-top: 1px solid #e4e6eb; background: white; padding: 10px;
-            flex-shrink: 0; /* Prevent shrinking */
+            border-top: 1px solid #e4e6eb; 
+            background: white; 
+            padding: 10px;
+            flex-shrink: 0; /* Never shrink */
+            padding-bottom: env(safe-area-inset-bottom, 10px); /* iPhone X+ safety */
+            z-index: 20;
         }
         .input-row { display: flex; align-items: center; gap: 10px; }
         #message-input {
@@ -586,10 +604,9 @@
 
             if (unsubscribeMessages) unsubscribeMessages();
             unsubscribeMessages = onSnapshot(q, (snapshot) => {
-                // Clear existing messages but KEEP the empty state prompt element
                 const prompt = emptyStatePrompt;
                 messagesList.innerHTML = ''; 
-                messagesList.appendChild(prompt); // Re-append prompt to list
+                messagesList.appendChild(prompt); 
 
                 if (snapshot.empty) {
                     prompt.style.display = 'flex';
